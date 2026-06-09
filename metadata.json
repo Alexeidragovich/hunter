@@ -1,0 +1,6 @@
+{
+  "name": "BurpSuite Mobile",
+  "description": "تطبيق محاكي لـ Burp Suite لاختبار اختراق الويب وتحليل طلبات HTTP وفحص الثغرات تلقائياً وبمساعدة الذكاء الاصطناعي.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
