@@ -1,14 +1,14 @@
-name: Build APK
+name: Generate Keystore and Build APK
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
-  workflow_dispatch:
 
 jobs:
-  build:
+  setup-and-build:
     runs-on: ubuntu-latest
     
     steps:
@@ -25,6 +25,15 @@ jobs:
       - name: Create .env file
         run: |
           echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
+        
+      - name: Generate Release Keystore
+        run: |
+          keytool -genkey -v -keystore upload-key.jks \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias upload \
+            -storepass "${{ secrets.STORE_PASSWORD }}" \
+            -keypass "${{ secrets.STORE_PASSWORD }}" \
+            -dname "CN=Hunter App, OU=Development, O=Hunter, L=Cairo, ST=Cairo, C=EG"
           
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -32,25 +41,32 @@ jobs:
       - name: Build Release APK
         run: ./gradlew assembleRelease
         env:
-          KEYSTORE_PATH: ${{ runner.temp }}/upload-key.jks
+          KEYSTORE_PATH: ${{ github.workspace }}/upload-key.jks
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: hunter-release-apk
+          path: app/build/outputs/apk/release/
+          retention-days: 30
           
-      - name: Sign APK with debug key (if no release key)
+      - name: Build Debug APK (Fallback)
         if: failure()
         run: ./gradlew assembleDebug
         
-      - name: Upload APK artifact
+      - name: Upload Debug APK
         uses: actions/upload-artifact@v4
+        if: failure()
         with:
-          name: app-apk
-          path: app/build/outputs/apk/release/*.apk
+          name: hunter-debug-apk
+          path: app/build/outputs/apk/debug/
           retention-days: 30
           
-      - name: Upload Debug APK artifact (if release failed)
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
-          retention-days: 30
+      - name: Display APK Info
+        if: success()
+        run: |
+          echo "✅ APK built successfully!"
+          ls -lh app/build/outputs/apk/release/
