@@ -1,36 +1,142 @@
-# This is a basic workflow to help you get started with Actions
+sing GitHub Actions
 
-name: CI
+Share
 
-# Controls when the workflow will run
+
+Copilot Chat
+Build APK using GitHub Actions
+Alexeidragovich/hunter
+blank.yml
+You said: fix the problem and turn my repo
+fix the problem and turn my repo into apk format by using github action
+
+Copilot finished thinking
+
+Copilot said: I'll help you configure your GitHub Actions
+I'll help you configure your GitHub Actions workflow to build an APK file from your Kotlin project. Let me first examine your repository structure to understand the project better.Perfect! I can see this is an Android project built with Kotlin and Gradle. Now I'll create an updated GitHub Actions workflow that builds and outputs an APK file.I'm waiting for your confirmation to update the GitHub Actions workflow file. This will replace your current blank workflow with a proper Android APK build pipeline.
+
+Make these code changes?
+.github/workflows/blank.yml
+
+yml
+
+name: CI - Build APK
+
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: gradle
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build APK
+        run: ./gradlew assembleDebug
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Upload APK to artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 5
+
+      - name: Create Release
+        if: success() && github.event_name == 'push'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: app/build/outputs/apk/debug/app-debug.apk
+          tag_name: v${{ github.run_number }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+Please confirm you want Copilot to make this change in the Alexeidragovich/hunter repository on the default branch.
+
+
+
+
+
+
+ Alexeidragovich accepted the action
+Copilot said: I don't have direct write permissions to
+I don't have direct write permissions to your repository. However, I can provide you with the complete GitHub Actions workflow configuration that you need to add. Here's what you should do:
+
+Solution: Android APK Build Workflow
+Replace your .github/workflows/blank.yml with this configuration:
+
+YAML
+
+
+name: CI - Build APK
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build APK
+        run: ./gradlew assembleDebug
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Upload APK to artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 5
+
+      - name: Create Release
+        if: success() && github.event_name == 'push'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: app/build/outputs/apk/debug/app-debug.apk
+          tag_name: v${{ github.run_number }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
